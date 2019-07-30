@@ -1,0 +1,8 @@
+00 07	* * *	root	maildf.sh tzaharchuk@sinikon.ru,ddubenko@sinikon.ru > /dev/null 2>&1
+00 03	* * *	root	pg_replica_linuxbuh.sh ut11_pg 192.168.10.4 5433 && pg_wal_backup_linuxbuh.sh ut11_pg 192.168.10.112 5433
+15 03	* * *	root	pg_replica_linuxbuh.sh ohtruda 192.168.10.4 5436 && pg_wal_backup_linuxbuh.sh ohtruda 192.168.10.112 5436
+30 03	* * *	root	pg_replica_linuxbuh.sh zup 192.168.10.4 5434 && pg_wal_backup_linuxbuh.sh zup 192.168.10.112 5434
+45 03	* * *	root	pg_replica_linuxbuh.sh buh 192.168.10.4 5435 && pg_wal_backup_linuxbuh.sh buh 192.168.10.112 5435
+00 04	* * *	root	pg_replica_linuxbuh.sh ut10 192.168.10.4 5438 && pg_wal_backup_linuxbuh.sh ut10 192.168.10.112 5438
+15 04	* * *	root	pg_replica_linuxbuh.sh zup_old 192.168.10.4 5437 && pg_wal_backup_linuxbuh.sh zup_old 192.168.10.112 5437
+#*/10 *	* * *	root	pg_cluster_work_test_linuxbuh.sh tzaharchuk@sinikon.ru,ddubenko@sinikon.ru > /dev/null 2>&1
