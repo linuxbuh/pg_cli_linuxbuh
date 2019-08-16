@@ -3,7 +3,7 @@
 source /etc/postgresql/pg_cli_linuxbuh.conf
 
 echo
-echo -e "Восстановить базу, сделать зеркало или архив базы"
+echo -e "Управление базами, восстановить базу, сделать зеркало или архив базы"
 echo
 PS3='Выберите: '
 echo
@@ -66,9 +66,8 @@ if [[ -z "$PORTBACKUP" ]];then
 fi
 
 
-#PORTBACKUP=`pg_lsclusters | grep -i $BASEBACKUP | awk '{printf $3 "\t" "\n"}'`
 echo
-echo "Порт базы $PORTBACKUP"
+echo "Создаем архив базы $BASEBACKUP с портом $PORTBACKUP на сервере $SERVERBACKUP"
 echo
 pg_wal_backup_linuxbuh.sh $BASEBACKUP $SERVERBACKUP $PORTBACKUP
 
@@ -76,37 +75,20 @@ fi
 
 if [ $VIBOR = "Создать_зеркало" ]; then
 echo
-echo "Список баз для репликации"
+echo "Базы данных и их порты для создания зеркала"
 echo
-pg_lsclusters | awk 'NR > 1 {printf $2 "\t" "\n"}'
+pg_lsclusters | awk 'NR > 1 {printf $2 "\t" $3 "\t" "\n"}'
 echo
-read -i "" -p "Введите название базы для репликации: " -e BASEREPLIKA
+read -i "" -p "Введите название базы ОТКУДА ДЕЛАТЬ ЗЕРКАЛО: " -e BASEREPLIKAOUT
 echo
-if [[ -z "$BASEREPLIKA" ]];then
+if [[ -z "$BASEREPLIKAOUT" ]];then
     echo
     echo "База не выбрана"
     echo
     exit 1
 fi
 echo
-echo "Вы ввели $BASEREPLIKA"
-echo
-read -i "" -p "Введите IP сервера с которого делать репликацию: " -e SERVERREPLIKA
-echo
-if [[ -z "$SERVERREPLIKA" ]];then
-    echo
-    echo "Сервер не выбран"
-    echo
-    exit 1
-fi
-
-#PORTREPLIKA=`pg_lsclusters | grep -i $BASEREPLIKA | awk '{printf $3 "\t" "\n"}'`
-echo
-echo "Базы данных и их порты"
-echo
-pg_lsclusters | awk 'NR > 1 {printf $2 "\t" $3 "\t" "\n"}'
-echo
-read -i "" -p "Введите порт базы данных: " -e PORTREPLIKA
+read -i "" -p "Введите порт базы данных ОТКУДА ДЕЛАТЬ ЗЕРКАЛО: " -e PORTREPLIKA
 echo
 if [[ -z "$PORTREPLIKA" ]];then
     echo
@@ -115,10 +97,59 @@ if [[ -z "$PORTREPLIKA" ]];then
     exit 1
 fi
 echo
-echo "Порт базы $PORTREPLIKA"
+echo "Вы ввели имя базы ОТКУДА ДЕЛАТЬ ЗЕРКАЛО $BASEREPLIKAOUT"
+echo "Порт базы ОТКУДА ДЕЛАТЬ ЗЕРКАЛО $PORTREPLIKA"
+echo
+read -i "" -p "Введите название базы КУДА ДЕЛАТЬ ЗЕРКАЛО : " -e BASEREPLIKAIN
+echo
+if [[ -z "$BASEREPLIKAIN" ]];then
+    echo
+    echo "База не выбрана"
+    echo
+    exit 1
+fi
+echo
+echo "Вы ввели название базы КУДА ДЕЛАТЬ ЗЕРКАЛО $BASEREPLIKAIN"
 echo
 
-pg_replica_linuxbuh.sh $BASEREPLIKA $SERVERREPLIKA $PORTREPLIKA
+read -i "" -p "Введите IP сервера ОТКУДА ДЕЛАТЬ ЗЕРКАЛО: " -e SERVERREPLIKA
+echo
+if [[ -z "$SERVERREPLIKA" ]];then
+    echo
+    echo "Сервер не выбран"
+    echo
+    exit 1
+fi
+
+echo
+echo -e "ВЫ УВЕРЕНЫ?"
+echo
+PS3='Выберите: '
+echo
+select YESNOREPLIKA in "Да" "Нет"
+do
+    echo
+    echo -e "Вы выбрали $YESNOREPLIKA"
+    echo
+    break
+done
+
+if [[ -z "$YESNOREPLIKA" ]];then
+    echo
+    echo "Вы не выбрали"
+    echo
+    exit 1
+fi
+
+    if [ $YESNOREPLIKA = "Да" ]; then
+    echo "Создаем зеркало базы $BASEREPLIKAOUT порт $PORTREPLIKA с сервера $SERVERREPLIKA в базу $BASEREPLIKAOUT на сервере $HOSTNAME"
+    pg_replica_linuxbuh.sh $BASEREPLIKAOUT $BASEREPLIKAIN $SERVERREPLIKA $PORTREPLIKA
+#    pg_replica_linuxbuh.sh $BASEREPLIKAOUT $SERVERREPLIKA $PORTREPLIKA
+    fi
+    if [ $YESNOREPLIKA = "Нет" ]; then
+    echo "Выход"
+    exit 1
+    fi
 
 fi
 
@@ -251,7 +282,6 @@ fi
 #fi
 
 if [ $VIBOR = "Управление_базами" ]; then
-SERVERHOSTNAME=`hostname`
 echo
 echo -e "Управление базами"
 echo
@@ -272,12 +302,11 @@ if [[ -z "$VIBORUPRAV" ]];then
     exit 1
 fi
 
-fi
+#fi
 
 if [ $VIBORUPRAV = "Статус_базы" ]; then
-
 echo
-echo "Список баз на сервере $SERVERHOSTNAME"
+echo "Список баз на сервере $HOSTNAME"
 echo
 pg_lsclusters | awk 'NR > 1 {printf $2 "\t" $3 "\t" "\n"}'
 echo
@@ -299,7 +328,7 @@ fi
 if [ $VIBORUPRAV = "Запустить_базу" ]; then
 
 echo
-echo "Список баз на сервере $SERVERHOSTNAME"
+echo "Список баз на сервере $HOSTNAME"
 echo
 pg_lsclusters | awk 'NR > 1 {printf $2 "\t" $3 "\t" "\n"}'
 echo
@@ -323,7 +352,7 @@ fi
 if [ $VIBORUPRAV = "Остановить_базу" ]; then
 
 echo
-echo "Список баз на сервере $SERVERHOSTNAME"
+echo "Список баз на сервере $HOSTNAME"
 echo
 pg_lsclusters | awk 'NR > 1 {printf $2 "\t" $3 "\t" "\n"}'
 echo
@@ -347,7 +376,7 @@ fi
 if [ $VIBORUPRAV = "Перезапустить_базу" ]; then
 
 echo
-echo "Список баз на сервере $SERVERHOSTNAME"
+echo "Список баз на сервере $HOSTNAME"
 echo
 pg_lsclusters | awk 'NR > 1 {printf $2 "\t" $3 "\t" "\n"}'
 echo
@@ -370,7 +399,7 @@ fi
 if [ $VIBORUPRAV = "Создать_базу" ]; then
 
 echo
-echo "Список баз на сервере $SERVERHOSTNAME"
+echo "Список баз на сервере $HOSTNAME"
 echo
 pg_lsclusters | awk 'NR > 1 {printf $2 "\t" "\n"}'
 echo
@@ -390,7 +419,7 @@ echo
 echo "Вы ввели $CREATEBASENAME"
 echo
 echo
-echo "Список занятых портов баз на сервере $SERVERHOSTNAME"
+echo "Список занятых портов баз на сервере $HOSTNAME"
 echo
 pg_lsclusters | awk 'NR > 1 {printf $3 "\t" "\n"}'
 echo
@@ -405,7 +434,7 @@ if [[ -z "$CREATEPORT" ]];then
     exit 1
 fi
 echo
-echo "Вы ввели $CREATEPORT"
+echo "Будет создана база $CREATEBASENAME с портом $CREATEPORT на сервере $HOSTNAME"
 echo
 #Создаем кластер
 su postgres -c "pg_createcluster $POSTGRESQLVER -p $CREATEPORT $CREATEBASENAME"
@@ -429,15 +458,14 @@ systemctl start postgresql@$POSTGRESQLVER-$CREATEBASENAME
 echo "Список кластеров"
 pg_lsclusters
 echo
-echo "База $CREATEBASENAME создана"
+echo "База $CREATEBASENAME с портом $CREATEPORT на сервере $HOSTNAME создана"
 echo
-
 fi
 
 if [ $VIBORUPRAV = "Удалить_базу" ]; then
 
 echo
-echo "Список баз на сервере $SERVERHOSTNAME"
+echo "Список баз на сервере $HOSTNAME"
 echo
 pg_lsclusters | awk 'NR > 1 {printf $2 "\t" "\n"}'
 echo
@@ -454,49 +482,76 @@ fi
 echo
 echo "Вы удаляете базу данных $DROPBASENAME"
 echo
-systemctl stop postgresql@$POSTGRESQLVER-$DROPBASENAME
-su postgres -c "pg_dropcluster $POSTGRESQLVER $DROPBASENAME"
 echo
-echo
-pg_lsclusters
-echo
-echo "База $DROPBASENAME удалена"
-echo
-echo
-echo -e "Удалить архивы базы данных $DROPBASENAME"
+echo -e "ВЫ УВЕРЕНЫ?"
 echo
 PS3='Выберите: '
 echo
-select DROPARHIV in "Да" "Нет"
+select YESNODROPBASE in "Да" "Нет"
 do
     echo
-    echo -e "Вы выбрали $DROPARHIV"
+    echo -e "Вы выбрали $YESNODROPBASE"
     echo
     break
 done
 
-if [[ -z "$DROPARHIV" ]];then
+if [[ -z "$YESNODROPBASE" ]];then
     echo
     echo "Вы не выбрали"
     echo
     exit 1
 fi
 
-if [ $DROPARHIV = "Да" ]; then
-rm -fR $POSTGRESQLPATH/$LOCALWALBASE/$DROPBASENAME
-rm -fR $POSTGRESQLPATH/$LOCALWAL/$DROPBASENAME
-rm -fR $SERVERBACKUPPATHWALBASE1/$DROPBASENAME
-rm -fR $SERVERBACKUPPATHWAL1/$DROPBASENAME
-echo
-echo "Урхивы базы данных $DROPBASENAME удалены"
-echo
-fi
+    if [ $YESNODROPBASE = "Да" ]; then
+    systemctl stop postgresql@$POSTGRESQLVER-$DROPBASENAME
+    su postgres -c "pg_dropcluster $POSTGRESQLVER $DROPBASENAME"
+    echo
+    echo
+    pg_lsclusters
+    echo
+    echo "База $DROPBASENAME удалена"
+    echo
+    echo
+    echo -e "Удалить архивы базы данных $DROPBASENAME"
+    echo
+    PS3='Выберите: '
+    echo
+	select DROPARHIV in "Да" "Нет"
+        do
+        echo
+        echo -e "Вы выбрали $DROPARHIV"
+        echo
+        break
+    done
 
-if [ $DROPARHIV = "Нет" ]; then
-echo
-echo "Урхивы базы данных $DROPBASENAME не удалены"
-echo
-fi
+    if [[ -z "$DROPARHIV" ]];then
+        echo
+        echo "Вы не выбрали"
+        echo
+        exit 1
+    fi
+
+    if [ $DROPARHIV = "Да" ]; then
+    rm -fR $POSTGRESQLPATH/$LOCALWALBASE/$DROPBASENAME
+    rm -fR $POSTGRESQLPATH/$LOCALWAL/$DROPBASENAME
+    rm -fR $SERVERBACKUPPATHWALBASE1/$DROPBASENAME
+    rm -fR $SERVERBACKUPPATHWAL1/$DROPBASENAME
+    echo
+    echo "Урхивы базы данных $DROPBASENAME удалены"
+    echo
+    fi
+
+    if [ $DROPARHIV = "Нет" ]; then
+    echo
+    echo "Урхивы базы данных $DROPBASENAME не удалены"
+    echo
+    fi
+
+    fi
+    if [ $YESNODROPBASE = "Нет" ]; then
+    echo "Выход"
+    fi
+
 
 fi
-
+fi

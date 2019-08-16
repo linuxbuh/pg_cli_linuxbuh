@@ -2,34 +2,36 @@
 
 source /etc/postgresql/pg_cli_linuxbuh.conf
 
-BASE=$1
-SERVER=$2
-PORT=$3
-HOST=`hostname`
+BASEOUT=$1
+BASEIN=$2
+SERVER=$3
+PORT=$4
 
-STATUS=`pg_lsclusters | grep -i down | awk '{printf $2"\n"}'`
+
+STATUS=`pg_isready -h $SERVER -p $PORT | grep -i принимает | awk '{printf $4"\n"}'`
 
 if [ -n "$STATUS" ]; then
-echo "ВНИМАНИЕ! Базы $STATUS на сервере $SERVER НЕ РАБОТАЮТ!!! ПРИМИТЕ СРОЧНЫЕ МЕРЫ :)"
+
+systemctl stop postgresql@$POSTGRESQLVER-$BASEIN
+
+rm -Rf $POSTGRESQLPATH/$BASEIN
+
+su postgres -c "pg_basebackup -h $SERVER -p $PORT -U postgres -D $POSTGRESQLPATH/$BASEIN -R -P --xlog-method=stream"
+
+rm -f $POSTGRESQLPATH/$BASEIN/recovery.conf
+
+sleep 10
+
+systemctl start postgresql@$POSTGRESQLVER-$BASEIN
+
+sleep 10
+
+systemctl restart postgresql@$POSTGRESQLVER-$BASEIN
+
+pg_lsclusters | grep -i $BASEIN | awk 'NR > 1 {printf $2 "\t" $3 "\t" $4 "\t" "\n"}'
+echo
+echo "Зеркало базы $BASEOUT создано в базе $BASEIN на сервере $HOSTNAME"
+echo
 else
-
-systemctl stop postgresql@$POSTGRESQLVER-$BASE
-
-rm -Rf $POSTGRESQLPATH/$BASE
-
-su postgres -c "pg_basebackup -h $SERVER -p $PORT -U postgres -D $POSTGRESQLPATH/$BASE -R -P --xlog-method=stream"
-
-rm -f $POSTGRESQLPATH/$BASE/recovery.conf
-
-sleep 10
-
-systemctl start postgresql@$POSTGRESQLVER-$BASE
-
-sleep 10
-
-systemctl restart postgresql@$POSTGRESQLVER-$BASE
-
-pg_lsclusters | grep -i $BASE | awk 'NR > 1 {printf $2 "\t" $3 "\t" $4 "\t" "\n"}'
-echo
-echo "Зеркало базы $BASE создано на сервере $HOST"
-echo
+echo "ВНИМАНИЕ! Базы $BASEOUT на сервере $SERVER НЕ РАБОТАЮТ!!! ПРИМИТЕ СРОЧНЫЕ МЕРЫ :)"
+fi

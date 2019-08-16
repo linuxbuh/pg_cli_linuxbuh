@@ -12,6 +12,9 @@ wal_backup_path_arhiv="$POSTGRESQLPATH/$LOCALWAL/$BASE"
 wal_backup_path_backupserver="$SERVERBACKUPPATHWALBASE1/$BASE"
 wal_backup_path_backupserver_arhiv="$SERVERBACKUPPATHWAL1/$BASE"
 
+su postgres -c "mkdir -p $wal_backup_path"
+su postgres -c "mkdir -p $wal_backup_path_arhiv"
+
 find $wal_backup_path -type f -mtime +2 -exec rm {} \;
 find $wal_backup_path_arhiv -type f -mtime +2 -exec rm {} \;
 find $wal_backup_path_backupserver -type f -mtime +7 -exec rm {} \;
